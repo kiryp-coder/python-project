@@ -46,7 +46,7 @@ class ProductList(BaseModel):
     total: int = Field(description="Сколько всего товаров подходит под фильтры (без учёта пагинации).", examples=[42])
 
 
-class UserCreate(BaseModel):
+class UserRegister(BaseModel):
     name: str = Field(
         min_length=2,
         max_length=100,
@@ -54,22 +54,35 @@ class UserCreate(BaseModel):
         examples=["Анна Петрова"],
     )
     email: EmailStr = Field(
-        description="Электронная почта. Должна быть уникальной: второй пользователь с той же почтой не создаётся.",
+        description="Электронная почта, она же логин. Должна быть уникальной: повторная регистрация вернёт 409.",
         examples=["anna@example.com"],
+    )
+    password: str = Field(
+        min_length=8,
+        max_length=72,
+        description="Пароль от 8 до 72 символов. Хранится только в виде хэша bcrypt.",
+        examples=["secret123"],
     )
 
 
-class User(UserCreate):
+class User(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(description="Уникальный номер пользователя.", examples=[1])
+    name: str = Field(examples=["Анна Петрова"])
+    email: str = Field(examples=["anna@example.com"])
+    role: str = Field(description="Роль: user или admin.", examples=["user"])
+
+
+class Token(BaseModel):
+    access_token: str = Field(description="JWT. Передаётся в заголовке Authorization: Bearer <токен>.")
+    token_type: str = Field(default="bearer", examples=["bearer"])
 
 
 class OrderCreate(BaseModel):
-    user_id: int = Field(description="Кто оформляет заказ (id пользователя).", examples=[1])
     product_ids: list[int] = Field(
         min_length=1,
-        description="id товаров в заказе, без повторов. Сумма заказа считается автоматически.",
+        description="id товаров в заказе, без повторов. Покупатель — вошедший пользователь, сумма считается автоматически.",
         examples=[[1, 2]],
     )
 

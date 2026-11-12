@@ -1,3 +1,5 @@
+import enum
+
 from sqlalchemy import Column, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,14 +13,23 @@ order_products = Table(
 )
 
 
+class UserRole(str, enum.Enum):
+    USER = "user"
+    ADMIN = "admin"
+
+
 class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(20), default=UserRole.USER.value)
 
-    orders: Mapped[list["Order"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    orders: Mapped[list["Order"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", order_by="Order.id"
+    )
 
 
 class Order(Base):
@@ -29,7 +40,9 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
 
     user: Mapped["User"] = relationship(back_populates="orders")
-    products: Mapped[list["Product"]] = relationship(secondary=order_products, back_populates="orders")
+    products: Mapped[list["Product"]] = relationship(
+        secondary=order_products, back_populates="orders", order_by="Product.id"
+    )
 
 
 class Product(Base):
@@ -41,4 +54,6 @@ class Product(Base):
     category: Mapped[str] = mapped_column(String(20))
     stock: Mapped[int] = mapped_column(Integer, default=0)
 
-    orders: Mapped[list["Order"]] = relationship(secondary=order_products, back_populates="products")
+    orders: Mapped[list["Order"]] = relationship(
+        secondary=order_products, back_populates="products", order_by="Order.id"
+    )

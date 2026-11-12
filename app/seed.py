@@ -1,6 +1,8 @@
 from sqlalchemy import func, select
 
-from app.models import Product
+from app.config import ADMIN_EMAIL, ADMIN_PASSWORD
+from app.models import Product, User, UserRole
+from app.security import hash_password
 
 STARTING_PRODUCTS = [
     {"name": "Ноутбук", "price": 75000, "category": "electronics", "stock": 5},
@@ -15,4 +17,17 @@ def add_starting_products(session):
     products_count = session.scalar(select(func.count()).select_from(Product))
     if products_count == 0:
         session.add_all([Product(**data) for data in STARTING_PRODUCTS])
+        session.commit()
+
+
+def add_admin(session):
+    email = ADMIN_EMAIL.lower()
+    if session.scalar(select(User).where(User.email == email)) is None:
+        admin = User(
+            name="Администратор",
+            email=email,
+            hashed_password=hash_password(ADMIN_PASSWORD),
+            role=UserRole.ADMIN.value,
+        )
+        session.add(admin)
         session.commit()

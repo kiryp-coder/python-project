@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, make_engine
 from app.models import Order, Product, User
+from app.security import hash_password
 
 DEMO_DATABASE = Path(__file__).parent / "demo_relations.db"
 
 
 def create_data(session):
-    user = User(name="Иван Петров", email="ivan@example.com")
+    user = User(name="Иван Петров", email="ivan@example.com", hashed_password=hash_password("demo12345"))
 
     laptop = Product(name="Ноутбук", price=75000, category="electronics", stock=5)
     mouse = Product(name="Мышь", price=1500, category="electronics", stock=40)
