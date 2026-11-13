@@ -43,3 +43,10 @@ def test_at_least_three_model_fields_have_description_and_examples(client):
     ]
 
     assert len(documented_fields) >= 3
+
+
+def test_health_checks_database(client):
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "database": "sqlite"}

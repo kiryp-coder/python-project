@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.config import CORS_ORIGINS
-from app.database import Base, SessionLocal, engine
+from app.database import Base, SessionLocal, engine, get_session
 from app.graphql_api import graphql_router
 from app.limiter import limiter
 from app.routers import auth, orders, products, tasks, users
@@ -18,6 +20,7 @@ tags_metadata = [
     {"name": "Пользователи", "description": "Пользователи магазина: список и удаление — только администратор."},
     {"name": "Заказы", "description": "Оформление и просмотр заказов (связь пользователей и товаров)."},
     {"name": "Фоновые задачи", "description": "Статус задач Celery (например, отправки чека)."},
+    {"name": "Служебное", "description": "Проверка, что приложение работает и видит базу данных."},
 ]
 
 
@@ -38,7 +41,7 @@ app = FastAPI(
         "Фоновые задачи — Celery + Redis. GraphQL-запросы к каталогу — по адресу `/graphql`. "
         "Все ответы и ошибки — в формате JSON; при ошибке возвращается поле `detail` с описанием."
     ),
-    version="1.3.0",
+    version="1.4.0",
     openapi_tags=tags_metadata,
     lifespan=lifespan,
 )
@@ -60,3 +63,9 @@ app.include_router(users.router)
 app.include_router(orders.router)
 app.include_router(tasks.router)
 app.include_router(graphql_router, prefix="/graphql", include_in_schema=False)
+
+
+@app.get("/health", tags=["Служебное"], summary="Проверка работы и подключения к базе")
+def health(session: Session = Depends(get_session)):
+    session.execute(text("SELECT 1"))
+    return {"status": "ok", "database": session.get_bind().dialect.name}

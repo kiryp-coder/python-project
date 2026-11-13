@@ -1,0 +1,4 @@
+Dockerfile text eol=lf
+.env.docker text eol=lf
+docker-compose.yml text eol=lf
+*.yml text eol=lf
