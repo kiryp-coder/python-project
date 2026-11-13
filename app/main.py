@@ -7,8 +7,9 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import CORS_ORIGINS
 from app.database import Base, SessionLocal, engine
+from app.graphql_api import graphql_router
 from app.limiter import limiter
-from app.routers import auth, orders, products, users
+from app.routers import auth, orders, products, tasks, users
 from app.seed import add_admin, add_starting_products
 
 tags_metadata = [
@@ -16,6 +17,7 @@ tags_metadata = [
     {"name": "Товары", "description": "Каталог: смотреть могут все, менять — только администратор."},
     {"name": "Пользователи", "description": "Пользователи магазина: список и удаление — только администратор."},
     {"name": "Заказы", "description": "Оформление и просмотр заказов (связь пользователей и товаров)."},
+    {"name": "Фоновые задачи", "description": "Статус задач Celery (например, отправки чека)."},
 ]
 
 
@@ -33,9 +35,10 @@ app = FastAPI(
     description=(
         "REST API интернет-магазина: каталог товаров с фильтрацией и пагинацией, пользователи и их заказы. "
         "Вход — через `/auth/login` (кнопка **Authorize**), токен JWT. "
+        "Фоновые задачи — Celery + Redis. GraphQL-запросы к каталогу — по адресу `/graphql`. "
         "Все ответы и ошибки — в формате JSON; при ошибке возвращается поле `detail` с описанием."
     ),
-    version="1.2.0",
+    version="1.3.0",
     openapi_tags=tags_metadata,
     lifespan=lifespan,
 )
@@ -55,3 +58,5 @@ app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(users.router)
 app.include_router(orders.router)
+app.include_router(tasks.router)
+app.include_router(graphql_router, prefix="/graphql", include_in_schema=False)
